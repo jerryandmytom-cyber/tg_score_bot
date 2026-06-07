@@ -62,32 +62,35 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
         f"⭐️ 趣味评分: {score}\n"
         f"🎭 昵称人格: {persona}\n"
         f"💬 {comment}\n\n"
-        f"🔥 点击分享 @TGLuckBot 给朋友测飞机号评分"
+        f"👉 快来测测你的飞机号有多好 @"
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 回复消息的 ID，指向发送指令的用户，确保多人同时使用不混乱
+    reply_to_id = update.message.message_id
+
     if context.args:
         username = context.args[0].replace("@", "")
     else:
-        await update.message.reply_text("用法: /rate @用户名\n例如: /rate @Metaworld3030")
+        await update.message.reply_text(
+            "用法: /rate @用户名\n例如: /rate @Metaworld3030",
+            reply_to_message_id=reply_to_id
+        )
         return
 
     score, persona, comment = score_name(username)
     text = make_result_text(username, score, persona, comment)
 
-    # 用代码块包裹，方便点击复制
     code_text = f"```\n{text}\n```"
 
     keyboard = [[InlineKeyboardButton("🔗 分享给朋友", switch_inline_query=username)]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(code_text, parse_mode="Markdown", reply_markup=reply_markup)
+    await update.message.reply_text(code_text, parse_mode="Markdown", reply_markup=reply_markup, reply_to_message_id=reply_to_id)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "发送 /rate @用户名\n"
-        "例如: /rate @Metaworld3030\n\n"
-        "我会给你一个趣味评分、昵称人格和专属评语！"
+        "👉快来测测你的飞机号有多好 @TGLuckBot"
     )
 
 if __name__ == "__main__":

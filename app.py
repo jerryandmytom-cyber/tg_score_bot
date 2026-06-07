@@ -62,7 +62,7 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
         f"⭐️ 趣味评分: {score}\n"
         f"🎭 昵称人格: {persona}\n"
         f"💬 {comment}\n\n"
-        f"👉 快来测测你的飞机号有多好 @"
+        f"👉 快来测测你的飞机号有多好 @TGLuckBot"
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):

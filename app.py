@@ -66,21 +66,16 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 回复消息的 ID，指向发送指令的用户，确保多人同时使用不混乱
     reply_to_id = update.message.message_id
 
     if context.args:
         username = context.args[0].replace("@", "")
     else:
-        await update.message.reply_text(
-            "用法: /rate @用户名\n例如: /rate @Metaworld3030",
-            reply_to_message_id=reply_to_id
-        )
-        return
+        sender = update.message.from_user
+        username = sender.username if sender.username else sender.first_name
 
     score, persona, comment = score_name(username)
     text = make_result_text(username, score, persona, comment)
-
     code_text = f"```\n{text}\n```"
 
     keyboard = [[InlineKeyboardButton("🔗 分享给朋友", switch_inline_query=username)]]

@@ -93,14 +93,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 if __name__ == "__main__":
-    import asyncio
+    import threading, asyncio
+    from http.server import HTTPServer, BaseHTTPRequestHandler
     token = os.environ["BOT_TOKEN"]
     port = int(os.environ.get("PORT", 10000))
-    webhook_url = os.environ.get("WEBHOOK_URL", "https://tg-username-score-bot.onrender.com")
-    print(f"评语库共 {len(_comments)} 条，人格库 {len(PERSONAS)} 种")
+    print(f"评语库共 {len(_comments)} 条，人格库 {len(PERSONAS)} 种，监听端口 {port}")
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("rate", rate))
-    asyncio.run(app.initialize())
-    asyncio.run(app.bot.set_webhook(f"{webhook_url}/{token}"))
-    app.run_webhook(listen="0.0.0.0", port=port, url_path=token, allowed_updates=["message"])
+    # 后台线程跑 polling
+    threading.Thread(target=lambda: app.run_polling(drop_pending_updates=True), daemon=True).start()
+    # 主线程监听 HTTP 端口（满足 Render 端口检测）
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
+        def log_message(self, *args): pass
+    HTTPServer(("0.0.0.0", port), H).serve_forever()

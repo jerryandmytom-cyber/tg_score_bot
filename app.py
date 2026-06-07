@@ -62,7 +62,7 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
         f"⭐️ 趣味评分: {score}\n"
         f"🎭 昵称人格: {persona}\n"
         f"💬 {comment}\n\n"
-        f"👉 快来测测你的飞机号有多好 @TGLuckBot"
+        f"👉 快来测测你的飞机号有多好 @"
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -71,8 +71,11 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
         username = context.args[0].replace("@", "")
     else:
-        sender = update.message.from_user
-        username = sender.username if sender.username else sender.first_name
+        await update.message.reply_text(
+            "用法: /rate\n例如: /rate @Metaworld3030",
+            reply_to_message_id=reply_to_id
+        )
+        return
 
     score, persona, comment = score_name(username)
     text = make_result_text(username, score, persona, comment)

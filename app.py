@@ -93,9 +93,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 if __name__ == "__main__":
+    import asyncio
     token = os.environ["BOT_TOKEN"]
+    port = int(os.environ.get("PORT", 10000))
+    webhook_url = os.environ.get("WEBHOOK_URL", "https://tg-username-score-bot.onrender.com")
     print(f"评语库共 {len(_comments)} 条，人格库 {len(PERSONAS)} 种")
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("rate", rate))
-    app.run_polling()
+    asyncio.run(app.initialize())
+    asyncio.run(app.bot.set_webhook(f"{webhook_url}/{token}"))
+    app.run_webhook(listen="0.0.0.0", port=port, url_path=token, allowed_updates=["message"])

@@ -62,7 +62,7 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
         f"⭐️ 趣味评分: {score}\n"
         f"🎭 昵称人格: {persona}\n"
         f"💬 {comment}\n\n"
-        f"👉 快来测测你的飞机号有多好 @"
+        f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,7 +88,8 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👉快来测测你的飞机号有多好 @TGLuckBot"
+        "👉 快来测测你的飞机号有多好 @TGLuckBot\n\n"
+        "📝 用法: 发送 /rate 到群里"
     )
 
 if __name__ == "__main__":

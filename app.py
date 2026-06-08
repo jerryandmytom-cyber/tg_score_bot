@@ -1,60 +1,69 @@
-import os, random, hashlib
+import os
+import hashlib
+import logging
+from aiohttp import web
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # ============================================================
 #  昵称人格库 50+ 种
 # ============================================================
 PERSONAS = [
-    "熬夜创业型","潜水大师型","神秘资本型","社交悍匪型","群聊观察家型",
-    "信息猎人型","红包收割机型","佛系围观型","技术大神型","段子收藏家型",
-    "深夜选手型","资源整合型","人脉王型","气氛组组长型","佛系躺平型",
-    "卷王型","低调大佬型","话痨型","冷场终结者型","话题制造机型",
-    "知识百科型","行走的广告型","表情包大师型","语音条狂人型","文件收藏家型",
-    "链接狂魔型","禁言名单型","群规破坏者型","潜水冒泡型","活跃新人型",
-    "神秘莫测型","数据分析师型","机会猎手型","风险厌恶型","社交牛杂型",
-    "时间管理大师型","拖延症晚期型","效率达人型","灵感爆发型","灵感枯竭型",
-    "情绪稳定型","暴躁老哥型","温柔体贴型","高冷傲娇型","接地气型",
-    "海王型","专一深情型","理性分析型","感性冲动型","商业头脑型",
-    "技术宅型","艺术气质型","运动健将型","美食家型","旅行博主型",
-    "读书达人型","音乐发烧型","影视追剧型","游戏玩家型","科技前沿型",
-    "区块链信仰型","AI乐观型","元宇宙看好型","传统行业坚守型",
+    "熬夜创业型", "潜水大师型", "神秘资本型", "社交悍匪型", "群聊观察家型",
+    "信息猎人型", "红包收割机型", "佛系围观型", "技术大神型", "段子收藏家型",
+    "深夜选手型", "资源整合型", "人脉王型", "气氛组组长型", "佛系躺平型",
+    "卷王型", "低调大佬型", "话痨型", "冷场终结者型", "话题制造机型",
+    "知识百科型", "行走的广告型", "表情包大师型", "语音条狂人型", "文件收藏家型",
+    "链接狂魔型", "禁言名单型", "群规破坏者型", "潜水冒泡型", "活跃新人型",
+    "神秘莫测型", "数据分析师型", "机会猎手型", "风险厌恶型", "社交牛杂型",
+    "时间管理大师型", "拖延症晚期型", "效率达人型", "灵感爆发型", "灵感枯竭型",
+    "情绪稳定型", "暴躁老哥型", "温柔体贴型", "高冷傲娇型", "接地气型",
+    "海王型", "专一深情型", "理性分析型", "感性冲动型", "商业头脑型",
+    "技术宅型", "艺术气质型", "运动健将型", "美食家型", "旅行博主型",
+    "读书达人型", "音乐发烧型", "影视追剧型", "游戏玩家型", "科技前沿型",
+    "区块链信仰型", "AI乐观型", "元宇宙看好型", "传统行业坚守型",
 ]
 
-# ============================================================
-#  评语库：前缀 × 身份 × 行为 × 结尾 = 10000+ 条
-# ============================================================
 PREFIXES = [
-    "像个","简直是","活脱脱一个","看起来像","妥妥的","堪称",
-    "简直是行走的一个","活脱脱的","简直就是一个","分明就是",
+    "像个", "简直是", "活脱脱一个", "看起来像", "妥妥的", "堪称",
+    "简直是行走的一个", "活脱脱的", "简直就是一个", "分明就是",
 ]
 ROLES = [
-    "隐藏大佬","群聊NPC","创业狂人","深夜选手","资源达人",
-    "气氛组组长","管理员候选人","观察家","行业精英","跨界高手",
+    "隐藏大佬", "群聊NPC", "创业狂人", "深夜选手", "资源达人",
+    "气氛组组长", "管理员候选人", "观察家", "行业精英", "跨界高手",
 ]
 TRAITS = [
-    "总能发现机会","从不轻易发言","一出现就被注意","收藏了无数频道",
-    "掌握内部消息","总在关键时刻上线","善于把握时机","低调但实力强",
-    "人脉广泛","执行力强","眼光独到","思维活跃","信息渠道多",
+    "总能发现机会", "从不轻易发言", "一出现就被注意", "收藏了无数频道",
+    "掌握内部消息", "总在关键时刻上线", "善于把握时机", "低调但实力强",
+    "人脉广泛", "执行力强", "眼光独到", "思维活跃", "信息渠道多",
 ]
 ENDINGS = [
-    "气场拉满。","让人忍不住点资料。","神秘感直接拉高。","像有支线剧情。",
-    "很有记忆点。","自带主角光环。","让人充满好奇。","极具神秘感。",
+    "气场拉满。", "让人忍不住点资料。", "神秘感直接拉高。", "像有支线剧情。",
+    "很有记忆点。", "自带主角光环。", "让人充满好奇。", "极具神秘感。",
 ]
 
-_comments = []
-for p in PREFIXES:
-    for r in ROLES:
-        for t in TRAITS:
-            for e in ENDINGS:
-                _comments.append(f"{p}{r}，{t}，{e}")
+TOTAL_COMMENTS = len(PREFIXES) * len(ROLES) * len(TRAITS) * len(ENDINGS)
+
 
 def score_name(name: str):
     h = int(hashlib.md5(name.lower().encode()).hexdigest(), 16)
     score = 60 + h % 41
     persona = PERSONAS[h % len(PERSONAS)]
-    comment = _comments[h % len(_comments)]
+    # 动态计算，不预生成 10000+ 条字符串
+    idx = h % TOTAL_COMMENTS
+    ei = idx % len(ENDINGS);  idx //= len(ENDINGS)
+    ti = idx % len(TRAITS);   idx //= len(TRAITS)
+    ri = idx % len(ROLES);    idx //= len(ROLES)
+    pi = idx % len(PREFIXES)
+    comment = f"{PREFIXES[pi]}{ROLES[ri]}，{TRAITS[ti]}，{ENDINGS[ei]}"
     return score, persona, comment
+
 
 def make_result_text(username: str, score: int, persona: str, comment: str) -> str:
     return (
@@ -65,49 +74,96 @@ def make_result_text(username: str, score: int, persona: str, comment: str) -> s
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
 
-async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_to_id = update.message.message_id
 
+async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
         username = context.args[0].replace("@", "")
     else:
         await update.message.reply_text(
-            "用法: /rate\n例如: /rate @Metaworld3030",
-            reply_to_message_id=reply_to_id
+            "用法: /rate @用户名\n例如: /rate @Metaworld3030",
+            reply_to_message_id=update.message.message_id,
         )
         return
 
     score, persona, comment = score_name(username)
     text = make_result_text(username, score, persona, comment)
     code_text = f"```\n{text}\n```"
-
     keyboard = [[InlineKeyboardButton("🔗 分享给朋友", switch_inline_query=username)]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(code_text, parse_mode="Markdown", reply_markup=reply_markup, reply_to_message_id=reply_to_id)
+    await update.message.reply_text(
+        code_text,
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        reply_to_message_id=update.message.message_id,
+    )
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👉 快来测测你的飞机号有多好 @TGLuckBot\n\n"
-        "📝 用法: 发送 /rate 到群里"
+        "👋 欢迎使用飞机号评测 Bot！\n\n"
+        "📝 用法: /rate @用户名\n"
+        "例如: /rate @Metaworld3030\n\n"
+        "👉 快来测测你的飞机号有多好 @TGLuckBot"
     )
 
-if __name__ == "__main__":
-    import threading, asyncio
-    from http.server import HTTPServer, BaseHTTPRequestHandler
-    token = os.environ["BOT_TOKEN"]
+
+async def health_handler(request):
+    return web.Response(text="OK")
+
+
+async def webhook_handler(request):
+    data = await request.json()
+    update = Update.de_json(data, request.app["bot_app"].bot)
+    await request.app["bot_app"].process_update(update)
+    return web.Response(text="OK")
+
+
+async def main():
+    token = os.environ.get("BOT_TOKEN")
+    if not token:
+        raise RuntimeError("BOT_TOKEN 环境变量未设置，请在 Render 后台配置")
+
+    webhook_url = os.environ.get("WEBHOOK_URL")
     port = int(os.environ.get("PORT", 10000))
-    print(f"评语库共 {len(_comments)} 条，人格库 {len(PERSONAS)} 种，监听端口 {port}")
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("rate", rate))
-    # 后台线程跑 polling
-    threading.Thread(target=lambda: app.run_polling(drop_pending_updates=True), daemon=True).start()
-    # 主线程监听 HTTP 端口（满足 Render 端口检测）
-    class H(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"OK")
-        def log_message(self, *args): pass
-    HTTPServer(("0.0.0.0", port), H).serve_forever()
+
+    bot_app = ApplicationBuilder().token(token).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CommandHandler("rate", rate))
+
+    await bot_app.initialize()
+    await bot_app.start()
+
+    if webhook_url:
+        # ---- Webhook 模式（推荐，适合 Render）----
+        secret_path = f"/webhook/{hashlib.md5(token.encode()).hexdigest()}"
+        await bot_app.bot.set_webhook(
+            url=f"{webhook_url.rstrip('/')}{secret_path}",
+            drop_pending_updates=True,
+        )
+        logger.info(f"Webhook 已设置: {webhook_url}{secret_path}")
+
+        web_app = web.Application()
+        web_app["bot_app"] = bot_app
+        web_app.router.add_get("/", health_handler)
+        web_app.router.add_post(secret_path, webhook_handler)
+
+        runner = web.AppRunner(web_app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", port)
+        await site.start()
+        logger.info(f"HTTP 服务已启动，监听端口 {port}")
+
+        import asyncio
+        await asyncio.Event().wait()
+    else:
+        # ---- Polling 模式（本地开发用）----
+        logger.info("未设置 WEBHOOK_URL，使用 Polling 模式（仅建议本地开发）")
+        await bot_app.updater.start_polling(drop_pending_updates=True)
+        import asyncio
+        await asyncio.Event().wait()
+
+
+if __name__ == "__main__":
+    import asyncio
+    logger.info(f"评语库共 {TOTAL_COMMENTS} 种组合，人格库 {len(PERSONAS)} 种")
+    asyncio.run(main())

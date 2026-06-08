@@ -83,8 +83,8 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
     share_text = (
-    f"🎯 用户名: @goole\n\n"
-    f"⭐️ 趣味评分: 80个小目标\n\n"
+    f"🎯 用户名: @Microsoft\n\n"
+    f"⭐️ 趣味评分: 84个小目标\n\n"
     f"🎭 昵称人格: 活跃新人型\n\n"
     f"💬 分明就是气氛组组长，信息渠道多，自带主角光环\n\n"
     f"👉 快邀请朋友测测飞机号 @TGLuckBot")

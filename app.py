@@ -1,7 +1,11 @@
 import os
 import hashlib
 import logging
-from aiohttp import web
+import asyncio
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
@@ -12,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============================================================
-#  昵称人格库 50+ 种
+#  昵称人格库
 # ============================================================
 PERSONAS = [
     "熬夜创业型", "潜水大师型", "神秘资本型", "社交悍匪型", "群聊观察家型",
@@ -55,7 +59,6 @@ def score_name(name: str):
     h = int(hashlib.md5(name.lower().encode()).hexdigest(), 16)
     score = 60 + h % 41
     persona = PERSONAS[h % len(PERSONAS)]
-    # 动态计算，不预生成 10000+ 条字符串
     idx = h % TOTAL_COMMENTS
     ei = idx % len(ENDINGS);  idx //= len(ENDINGS)
     ti = idx % len(TRAITS);   idx //= len(TRAITS)
@@ -65,7 +68,7 @@ def score_name(name: str):
     return score, persona, comment
 
 
-def make_result_text(username: str, score: int, persona: str, comment: str) -> str:
+def make_result_text(username, score, persona, comment):
     return (
         f"🎯 用户名: @{username}\n"
         f"⭐️ 趣味评分: {score}\n"
@@ -87,11 +90,10 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     score, persona, comment = score_name(username)
     text = make_result_text(username, score, persona, comment)
-    code_text = f"```\n{text}\n```"
     keyboard = [[InlineKeyboardButton("🔗 分享给朋友", switch_inline_query=username)]]
 
     await update.message.reply_text(
-        code_text,
+        f"```\n{text}\n```",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
         reply_to_message_id=update.message.message_id,
@@ -107,23 +109,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def health_handler(request):
-    return web.Response(text="OK")
+# ============================================================
+#  HTTP 健康检查 + Webhook（纯标准库，无第三方依赖）
+# ============================================================
+def make_http_handler(bot_app, secret_path, loop):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
 
+        def do_POST(self):
+            if self.path != secret_path:
+                self.send_response(404)
+                self.end_headers()
+                return
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                update = Update.de_json(data, bot_app.bot)
+                future = asyncio.run_coroutine_threadsafe(
+                    bot_app.process_update(update), loop
+                )
+                future.result(timeout=30)
+            except Exception as e:
+                logger.error(f"处理 update 出错: {e}")
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
 
-async def webhook_handler(request):
-    data = await request.json()
-    update = Update.de_json(data, request.app["bot_app"].bot)
-    await request.app["bot_app"].process_update(update)
-    return web.Response(text="OK")
+        def log_message(self, *args):
+            pass  # 静默 HTTP 日志
+
+    return Handler
 
 
 async def main():
     token = os.environ.get("BOT_TOKEN")
     if not token:
-        raise RuntimeError("BOT_TOKEN 环境变量未设置，请在 Render 后台配置")
+        raise RuntimeError("BOT_TOKEN 环境变量未设置")
 
-    webhook_url = os.environ.get("WEBHOOK_URL")
+    webhook_url = os.environ.get("WEBHOOK_URL", "").rstrip("/")
     port = int(os.environ.get("PORT", 10000))
 
     bot_app = ApplicationBuilder().token(token).build()
@@ -133,37 +160,31 @@ async def main():
     await bot_app.initialize()
     await bot_app.start()
 
+    loop = asyncio.get_running_loop()
+    secret_path = f"/webhook/{hashlib.md5(token.encode()).hexdigest()}"
+
     if webhook_url:
-        # ---- Webhook 模式（推荐，适合 Render）----
-        secret_path = f"/webhook/{hashlib.md5(token.encode()).hexdigest()}"
+        # Webhook 模式
         await bot_app.bot.set_webhook(
-            url=f"{webhook_url.rstrip('/')}{secret_path}",
+            url=f"{webhook_url}{secret_path}",
             drop_pending_updates=True,
         )
         logger.info(f"Webhook 已设置: {webhook_url}{secret_path}")
-
-        web_app = web.Application()
-        web_app["bot_app"] = bot_app
-        web_app.router.add_get("/", health_handler)
-        web_app.router.add_post(secret_path, webhook_handler)
-
-        runner = web.AppRunner(web_app)
-        await runner.setup()
-        site = web.TCPSite(runner, "0.0.0.0", port)
-        await site.start()
-        logger.info(f"HTTP 服务已启动，监听端口 {port}")
-
-        import asyncio
-        await asyncio.Event().wait()
     else:
-        # ---- Polling 模式（本地开发用）----
-        logger.info("未设置 WEBHOOK_URL，使用 Polling 模式（仅建议本地开发）")
+        # Polling 模式（本地开发）
+        logger.info("未设置 WEBHOOK_URL，使用 Polling 模式")
         await bot_app.updater.start_polling(drop_pending_updates=True)
-        import asyncio
-        await asyncio.Event().wait()
+
+    # 先绑定端口，再记录日志，确保 Render 能检测到
+    handler_class = make_http_handler(bot_app, secret_path, loop)
+    server = HTTPServer(("0.0.0.0", port), handler_class)
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
+    logger.info(f"HTTP 服务已启动，监听端口 {port}")
+
+    await asyncio.Event().wait()  # 永久阻塞
 
 
 if __name__ == "__main__":
-    import asyncio
     logger.info(f"评语库共 {TOTAL_COMMENTS} 种组合，人格库 {len(PERSONAS)} 种")
     asyncio.run(main())

@@ -61,15 +61,15 @@ def score_name(name: str):
 # ── Telegram handlers ────────────────────────────────────────
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 欢迎使用飞机号评测 Bot！\n\n"
+        "👋 快测一下你的飞机号值多少钱！㊙️\n\n"
         "📝 用法: /rate @用户名\n"
-        "例如: /rate @Metaworld3030"
+        "例如: /rate @TG"
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text(
-            "用法: /rate @用户名\n例如: /rate @Metaworld3030",
+            "用法: /rate @用户名\n例如: /rate @TG",
             reply_to_message_id=update.message.message_id,
         )
         return
@@ -77,7 +77,7 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     score, persona, comment = score_name(username)
     text = (
         f"🎯 用户名: @{username}\n"
-        f"⭐️ 趣味评分: {score}\n"
+        f"⭐️ 趣味评分: {score}个小目标\n"
         f"🎭 昵称人格: {persona}\n"
         f"💬 {comment}\n\n"
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"

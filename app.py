@@ -4,6 +4,7 @@ import logging
 import asyncio
 import json
 import threading
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -81,7 +82,9 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {comment}\n\n"
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
-    keyboard = [[InlineKeyboardButton("🔗 分享给朋友", switch_inline_query=username)]]
+    share_text = "🔗 分享给朋友测测飞机号 @TGLuckBot"
+    share_url = "https://t.me/share/url?url=https://t.me/TGLuckBot&text=" + urllib.parse.quote(share_text)
+    keyboard = [[InlineKeyboardButton("🔗 分享给朋友", url=share_url)]]
     await update.message.reply_text(
         f"```\n{text}\n```",
         parse_mode="Markdown",

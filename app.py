@@ -67,13 +67,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
+    user = update.message.from_user
+    if not user.username:
         await update.message.reply_text(
-            "用法: /rate @用户名\n例如: /rate @TG",
+            "⚠️ 你还没有设置 Telegram 用户名，无法测评。\n"
+            "请前往 设置 → 用户名 设置后再试！",
             reply_to_message_id=update.message.message_id,
         )
         return
-    username = context.args[0].lstrip("@")
+    username = user.username
     score, persona, comment = score_name(username)
     text = (
         f"🎯 出海联盟客官: @{username}\n"

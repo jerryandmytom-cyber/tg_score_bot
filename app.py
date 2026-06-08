@@ -82,7 +82,12 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {comment}\n\n"
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
-    share_text = "🔗 分享给朋友测测飞机号 @TGLuckBot"
+    share_text = "🎯 用户名: @gooapple
+⭐️ 趣味评分: 80个小目标
+🎭 昵称人格: 活跃新人型
+💬 分明就是气氛组组长，信息渠道多，自带主角光环。
+
+👉 快邀请朋友测测飞机号 @TGLuckBot"
     share_url = "https://t.me/share/url?url=https://t.me/TGLuckBot&text=" + urllib.parse.quote(share_text)
     keyboard = [[InlineKeyboardButton("🔗 分享给朋友", url=share_url)]]
     await update.message.reply_text(

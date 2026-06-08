@@ -82,7 +82,7 @@ async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💬 {comment}\n\n"
         f"👉 快邀请朋友测测飞机号 @TGLuckBot"
     )
-    share_text = "🎯 用户名: @gooapple
+    share_text = "🎯 用户名: @goole
 ⭐️ 趣味评分: 80个小目标
 🎭 昵称人格: 活跃新人型
 💬 分明就是气氛组组长，信息渠道多，自带主角光环。

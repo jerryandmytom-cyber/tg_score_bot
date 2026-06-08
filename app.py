@@ -62,8 +62,8 @@ def score_name(name: str):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 快测一下你的飞机号值多少个小目标！㊙️\n\n"
-        "📝 用法: /rate @用户名\n"
-        "例如: /rate @TG"
+        "📝 用法:发送 /rate \n"
+        
     )
 
 async def rate(update: Update, context: ContextTypes.DEFAULT_TYPE):

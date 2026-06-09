@@ -129,7 +129,7 @@ BOT_USERNAME = "TGLuckBot"
 
 def make_share_url(result_text: str) -> str:
     return (
-        "&text=" + urllib.parse.quote(result_text)
+        "https://t.me/share/url?text=" + urllib.parse.quote(result_text)
     )
 
 def result_keyboard(text: str) -> InlineKeyboardMarkup:

@@ -123,24 +123,22 @@ SHICHEN_ALL = [
 ]
 
 # ============================================================
-#  分享链接（全局统一）
+#  分享链接（动态：分享内容 = 实际结果文本）
 # ============================================================
 BOT_USERNAME = "TGLuckBot"
-_SHARE_TEXT  = f"🔮 快来测测你的飞机号有多好 @{BOT_USERNAME}"
-SHARE_URL    = "https://t.me/share/url?url=https://t.me/" + BOT_USERNAME + \
-               "&text=" + urllib.parse.quote(_SHARE_TEXT)
 
-def share_button(label: str = "🔗 邀请朋友一起测") -> InlineKeyboardButton:
-    return InlineKeyboardButton(label, url=SHARE_URL)
+def make_share_url(result_text: str) -> str:
+    return (
+        "https://t.me/share/url?url=https://t.me/" + BOT_USERNAME
+        + "&text=" + urllib.parse.quote(result_text)
+    )
 
-def result_keyboard(extra_row: list | None = None) -> InlineKeyboardMarkup:
-    """结果消息通用键盘：可选额外按钮行 + 分享 + 返回菜单"""
-    rows = []
-    if extra_row:
-        rows.append(extra_row)
-    rows.append([share_button()])
-    rows.append([InlineKeyboardButton("🔙 返回菜单", callback_data="menu")])
-    return InlineKeyboardMarkup(rows)
+def result_keyboard(text: str) -> InlineKeyboardMarkup:
+    """通用结果键盘：分享（携带实际结果文本）+ 返回菜单"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔗 分享给朋友", url=make_share_url(text))],
+        [InlineKeyboardButton("🔙 返回菜单", callback_data="menu")],
+    ])
 
 # ============================================================
 #  工具函数
@@ -316,35 +314,39 @@ async def cmd_rate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(
         text,
-        reply_markup=result_keyboard(),
+        reply_markup=result_keyboard(text),
         reply_to_message_id=update.message.message_id,
     )
 
 async def cmd_luckynumber(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = build_luckynumber(update.message.from_user)
     await update.message.reply_text(
-        build_luckynumber(update.message.from_user),
-        reply_markup=result_keyboard(),
+        text,
+        reply_markup=result_keyboard(text),
         reply_to_message_id=update.message.message_id,
     )
 
 async def cmd_fortune(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = build_fortune(update.message.from_user)
     await update.message.reply_text(
-        build_fortune(update.message.from_user),
-        reply_markup=result_keyboard(),
+        text,
+        reply_markup=result_keyboard(text),
         reply_to_message_id=update.message.message_id,
     )
 
 async def cmd_goodhours(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = build_goodhours(update.message.from_user)
     await update.message.reply_text(
-        build_goodhours(update.message.from_user),
-        reply_markup=result_keyboard(),
+        text,
+        reply_markup=result_keyboard(text),
         reply_to_message_id=update.message.message_id,
     )
 
 async def cmd_wealth(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = build_wealth(update.message.from_user)
     await update.message.reply_text(
-        build_wealth(update.message.from_user),
-        reply_markup=result_keyboard(),
+        text,
+        reply_markup=result_keyboard(text),
         reply_to_message_id=update.message.message_id,
     )
 
@@ -381,7 +383,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "请前往 设置 → 用户名 设置后再试！"
             )
             return
-        await query.message.reply_text(text, reply_markup=result_keyboard())
+        await query.message.reply_text(text, reply_markup=result_keyboard(text))
         return
 
     # 其他四个功能
@@ -391,7 +393,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     text = fn(user)
-    await query.message.reply_text(text, reply_markup=result_keyboard())
+    await query.message.reply_text(text, reply_markup=result_keyboard(text))
 
 # ============================================================
 #  HTTP Server + Bot（主线程先绑端口，Bot 跑子线程）

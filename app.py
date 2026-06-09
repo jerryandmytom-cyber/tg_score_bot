@@ -198,7 +198,7 @@ def build_rate(user) -> str | None:
         f"✨ 出海客官：@{user.username}\n\n"
         f"🧧 测评结果：\n"
         f"━━━━━━━━━━━━━━━━\n"
-        f"⭐️ 身价指数：{score}\n"
+        f"⭐️ 身价指数：{score}个小目标\n"
         f"🎯 个性风采：{persona}\n"
         f"💬 {comment}\n"
         f"━━━━━━━━━━━━━━━━\n\n"

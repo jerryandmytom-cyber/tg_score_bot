@@ -129,8 +129,7 @@ BOT_USERNAME = "TGLuckBot"
 
 def make_share_url(result_text: str) -> str:
     return (
-        "https://t.me/share/url?url=https://t.me/" + BOT_USERNAME
-        + "&text=" + urllib.parse.quote(result_text)
+    "&text=" + urllib.parse.quote(result_text)
     )
 
 def result_keyboard(text: str) -> InlineKeyboardMarkup:
@@ -202,7 +201,6 @@ def build_rate(user) -> str | None:
         f"🎯 个性风采：{persona}\n"
         f"💬 {comment}\n"
         f"━━━━━━━━━━━━━━━━\n\n"
-        f"👉 快邀请朋友也来测测 @{BOT_USERNAME}"
     )
 
 def build_luckynumber(user) -> str:

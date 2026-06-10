@@ -128,8 +128,11 @@ SHICHEN_ALL = [
 BOT_USERNAME = "TGLuckBot"
 
 def make_share_url(result_text: str) -> str:
+    share_text = result_text + "\n\n🔮 快来测测你的飞机号 @" + BOT_USERNAME
     return (
-        "https://t.me/share/url?text=" + urllib.parse.quote(result_text)
+        "https://t.me/share/url"
+        + "?url=" + urllib.parse.quote("https://t.me/" + BOT_USERNAME, safe="")
+        + "&text=" + urllib.parse.quote(share_text, safe="")
     )
 
 def result_keyboard(text: str) -> InlineKeyboardMarkup:
